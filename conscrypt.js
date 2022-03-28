@@ -68,7 +68,7 @@ Java.perform(() => {
   "$init(java.net.Socket, java.lang.String, int, boolean, org.conscrypt.SSLParametersImpl): void",
   "$init(org.conscrypt.SSLParametersImpl): void",
   */
-  const Socket = Java.use('com.android.org.conscrypt.ConscryptFileDescriptorSocket');
+  const Socket = Java.use('org.conscrypt.ConscryptFileDescriptorSocket');
 
   for (const init of Socket.$init.overloads) {
     // Socket socket, String hostname, int port, boolean autoClose, SSLParametersImpl sslParameters
@@ -85,7 +85,7 @@ Java.perform(() => {
     return outputStream;      
   }
 
-  const OutputStream = Java.use('com.android.org.conscrypt.ConscryptFileDescriptorSocket$SSLOutputStream');
+  const OutputStream = Java.use('org.conscrypt.ConscryptFileDescriptorSocket$SSLOutputStream');
   /*for (const init of OutputStream.$init.overloads) {
     init.implementation = function(a, b, c) {
       console.log(`OutputStream-${this.hashCode()} created`, a, b, c);
