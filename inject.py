@@ -23,7 +23,8 @@ def current_time():
 
 log_file_name = current_time() + '.log'
 log_file = Path('logs') / log_file_name
-open(log_file, 'x').close()
+with open(log_file, 'w') as file:
+    file.write(PROCESS_NAME + '\n')
 
 
 device = frida.get_usb_device()
