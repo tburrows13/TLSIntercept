@@ -1,4 +1,21 @@
 #! /usr/local/Caskroom/miniconda/base/bin/python
+"""
+python inject.py <process> <script>
+Default script is 'conscrypt'.
+
+Example usage:
+python inject.py signal
+python inject.py whatsapp
+python inject.py messenger
+python inject.py telegram
+python inject.py tpmb4
+
+Or use full process name:
+python inject.py org.thoughtcrime.securesms
+
+`frida-ps -U` outputs all process names.
+Frida 15 seems to use 'titles' instead of process names (e.g. Signal instead of org.thoughtcrime.securesms).
+"""
 
 import time
 import datetime
@@ -7,24 +24,29 @@ from pathlib import Path
 
 import frida
 
+
 PROCESS_NAME = sys.argv[1]
-SCRIPT_FILE = sys.argv[2] + '.js'
+SCRIPT_FILE = (sys.argv[2] if len(sys.argv) > 2 else 'conscrypt') + '.js'
 
-"""
-python inject.py com.tpmb4.partiiproject conscrypt
-python inject.py org.thoughtcrime.securesms conscrypt
-python inject.py org.telegram.messenger.web conscrypt
-python inject.py com.whatsapp conscrypt
-python inject.py com.facebook.orca conscrypt
-"""
+processes = {
+    'signal': 'org.thoughtcrime.securesms',
+    'whatsapp': 'com.whatsapp',
+    'messenger': 'com.facebook.orca',
+    'telegram': 'org.telegram.messenger.web',
+    'tpmb4': 'com.tpmb4.partiiproject',
+}
 
+if PROCESS_NAME in processes.keys():
+    PROCESS_NAME = processes[PROCESS_NAME]
+
+print(PROCESS_NAME, SCRIPT_FILE)
 def current_time():
     return datetime.datetime.now().replace(microsecond=0).isoformat()
 
 log_file_name = current_time() + '.log'
 log_file = Path('logs') / log_file_name
 with open(log_file, 'w') as file:
-    file.write(PROCESS_NAME + '\n')
+    file.write(f'{PROCESS_NAME}, {SCRIPT_FILE}\n')
 
 
 device = frida.get_usb_device()
