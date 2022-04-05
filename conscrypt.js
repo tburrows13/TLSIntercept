@@ -55,56 +55,57 @@ function processData(byteArray, outputStream) {
 
 Java.perform(() => {
   Java.deoptimizeEverything();
-  const Socket = Java.use('org.conscrypt.ConscryptFileDescriptorSocket');
 
-  let classNames = Java.enumerateLoadedClassesSync()
-  for (let conscrypt_id of ['org.conscrypt', 'com.android.org.conscrypt']) {
-    //console.log("Starting javascript");
-    //console.log(`Android version: ${Java.androidVersion}`);
+  console.log("Starting javascript");
+  console.log(`Android version: ${Java.androidVersion}`);
 
-    /*
-    "$init(java.lang.String, int, java.net.InetAddress, int, org.conscrypt.SSLParametersImpl): void",
-    "$init(java.lang.String, int, org.conscrypt.SSLParametersImpl): void",
-    "$init(java.net.InetAddress, int, java.net.InetAddress, int, org.conscrypt.SSLParametersImpl): void",
-    "$init(java.net.InetAddress, int, org.conscrypt.SSLParametersImpl): void",
-    "$init(java.net.Socket, java.lang.String, int, boolean, org.conscrypt.SSLParametersImpl): void",
-    "$init(org.conscrypt.SSLParametersImpl): void",
-    */
-    //console.log("Skipping " + conscrypt_id)
+  const ActivityThread = Java.use('android.app.ActivityThread');
+  const processName = ActivityThread.currentProcessName();
 
-    if (!classNames.includes(conscrypt_id + '.ConscryptFileDescriptorSocket')) {
-      console.log("Skipping " + conscrypt_id)
-      //continue
+  if (processName === 'org.thoughtcrime.securesms') {
+    // Signal referes to conscrypt by a different name
+    var conscrypt_id = 'org.conscrypt';
+  } else {
+    var conscrypt_id = 'com.android.org.conscrypt';
+  }
+
+  /*
+  "$init(java.lang.String, int, java.net.InetAddress, int, org.conscrypt.SSLParametersImpl): void",
+  "$init(java.lang.String, int, org.conscrypt.SSLParametersImpl): void",
+  "$init(java.net.InetAddress, int, java.net.InetAddress, int, org.conscrypt.SSLParametersImpl): void",
+  "$init(java.net.InetAddress, int, org.conscrypt.SSLParametersImpl): void",
+  "$init(java.net.Socket, java.lang.String, int, boolean, org.conscrypt.SSLParametersImpl): void",
+  "$init(org.conscrypt.SSLParametersImpl): void",
+  */
+  
+  /*const Socket = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket');
+
+  for (const init of Socket.$init.overloads) {
+    // Socket socket, String hostname, int port, boolean autoClose, SSLParametersImpl sslParameters
+    init.implementation = function(a, b, c, d, e) {
+      //console.log(`Socket-${this.hashCode()} created (${a})`);
+      // Socket[address=chat.signal.org/76.223.92.165,port=443,localPort=38674] chat.signal.org 443 true org.conscrypt.SSLParametersImpl@11aaa25
+      return this.$init(a, b, c, d, e);
     }
-    const Socket = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket');
+  }
 
-    for (const init of Socket.$init.overloads) {
-      // Socket socket, String hostname, int port, boolean autoClose, SSLParametersImpl sslParameters
-      init.implementation = function(a, b, c, d, e) {
-        //console.log(`Socket-${this.hashCode()} created (${a})`);
-        // Socket[address=chat.signal.org/76.223.92.165,port=443,localPort=38674] chat.signal.org 443 true org.conscrypt.SSLParametersImpl@11aaa25
-        return this.$init(a, b, c, d, e);
-      }
+  Socket.getOutputStream.implementation = function() {
+    var outputStream = this.getOutputStream();
+    //console.log(`Socket-${this.hashCode()} Getting output stream, hashCode=${outputStream.hashCode()}`);
+    return outputStream;      
+  }
+
+  /*for (const init of OutputStream.$init.overloads) {
+    init.implementation = function(a, b, c) {
+      console.log(`OutputStream-${this.hashCode()} created`, a, b, c);
+      return this.$init(a, b, c);
     }
+  }*/
 
-    Socket.getOutputStream.implementation = function() {
-      var outputStream = this.getOutputStream();
-      //console.log(`Socket-${this.hashCode()} Getting output stream, hashCode=${outputStream.hashCode()}`);
-      return outputStream;      
-    }
-
-    const OutputStream = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket$SSLOutputStream');
-    /*for (const init of OutputStream.$init.overloads) {
-      init.implementation = function(a, b, c) {
-        console.log(`OutputStream-${this.hashCode()} created`, a, b, c);
-        return this.$init(a, b, c);
-      }
-    }*/
-
-    OutputStream.write.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
-      processData(byteArray, this);
-      this.write(byteArray, offset, byteCount);
-    }
+  const OutputStream = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket$SSLOutputStream');
+  OutputStream.write.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
+    processData(byteArray, this);
+    this.write(byteArray, offset, byteCount);
   }
 
   console.log("Finished javascript");
