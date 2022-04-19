@@ -18,8 +18,10 @@ Frida 15 seems to use 'titles' instead of process names (e.g. Signal instead of 
 """
 
 import time
+import os
 import datetime
 import sys
+import json
 from pathlib import Path
 
 import frida
@@ -40,11 +42,17 @@ if PROCESS_NAME in processes.keys():
     PROCESS_NAME = processes[PROCESS_NAME]
 
 print(PROCESS_NAME, SCRIPT_FILE)
-def current_time():
-    return datetime.datetime.now().replace(microsecond=0).isoformat()
+def current_time(ms=False):
+    now = datetime.datetime.now()
+    if not ms:
+        now = now.replace(microsecond=0)
+    return now.isoformat()
+
+log_folder = Path('logs') / current_time()
+os.makedirs(log_folder)
 
 log_file_name = current_time() + '.log'
-log_file = Path('logs') / log_file_name
+log_file = log_folder / log_file_name
 with open(log_file, 'w') as file:
     file.write(f'{PROCESS_NAME}, {SCRIPT_FILE}\n')
 
@@ -70,23 +78,32 @@ def decode(bytes):
     print("=" * 100)
 
 
-def on_message(message, data):
+def write_log(message):
     with open(log_file, 'a') as file:
-        file.write('-' * 120 + '\n' + current_time() + '\n')
-        if message['type'] == 'send':
-            payload = message['payload']
-            file.write(str(payload) + '\n')
+        file.write('-' * 120 + '\n' + current_time() + '\n' + message + '\n')
 
-            #decode(payload)
-            #print("[*] {0}".format(message['payload']))
-        elif message['type'] == 'error':
-            #print(message['description'])
-            file.write('ERROR' + '\n' + message['stack'] + '\n')
-            #print(message['stack'])
-            #print(message['fileName'])
-            #print(f"{message['lineNumber']}:{message['columnNumber']}")
-        else:
-            file.write(str(message) + '\n')
+
+def on_message(message, data):
+    if message['type'] == 'send':
+        payload = message['payload']
+        #payload = json.loads(payload)
+        write_log(str(payload))
+        if payload['type'] == 'data':
+            with open(log_folder / f"{current_time(ms=True)}-{payload['hashCode']}-sent.hex", 'w+b') as file:
+                file.write(data)
+
+
+        #decode(payload)
+        #print("[*] {0}".format(message['payload']))
+    elif message['type'] == 'error':
+        #print(message['description'])
+        write_log(message['stack'])
+        #print('JavaScript Error:' + '\n' + message['stack'])
+        #print(message['stack'])
+        #print(message['fileName'])
+        #print(f"{message['lineNumber']}:{message['columnNumber']}")
+    else:
+        write_log(str(message))
 
 script.on('message', on_message)
 
@@ -94,4 +111,8 @@ script.load()
 device.resume(pid)
 print("Script loaded")
 
-input()
+try:
+    input()
+except KeyboardInterrupt:
+    pass
+print('Exiting...')

@@ -1,6 +1,40 @@
-function binaryToHexToAscii(array) {
+var data = {};
+
+function saveData(byteArray, byteCount, hashCode) {
+  var intArray = byteArrayToIntArray(byteArray, byteCount);
+  if (hashCode in data) {
+    data[hashCode] = data[hashCode].concat(intArray);
+  } else {
+    data[hashCode] = intArray;
+  };
+  send(
+    {
+      type: 'data',
+      hashCode: hashCode,
+    },
+    data[hashCode]
+  );
+}
+
+function byteArrayToIntArray(array, length) {
   var result = [];
-  for (var i = 0; i < array.length; ++i) {
+  for (var i = 0; i < length; ++i) {
+      result.push(
+          parseInt(
+              ('0' + (array[i] & 0xFF).toString(16)).slice(-2), // binary2hex part
+              16
+          )
+      );
+  }
+  if (parseInt(('0' + (array[length] & 0xFF).toString(16)).slice(-2), 16) != 0) {
+    console.log('ByteCount wrong')
+  }
+  return result;
+}
+
+function binaryToHexToAscii(array, length) {
+  var result = [];
+  for (var i = 0; i < length; ++i) {
       result.push(String.fromCharCode( // hex2ascii part
           parseInt(
               ('0' + (array[i] & 0xFF).toString(16)).slice(-2), // binary2hex part
@@ -12,12 +46,13 @@ function binaryToHexToAscii(array) {
 }
 
 
-function processData(byteArray, outputStream) {
-  var decoded = binaryToHexToAscii(byteArray);
+function processData(byteArray, byteCount, outputStream) {
+  var decoded = binaryToHexToAscii(byteArray, byteCount);
   //console.log(`OutputStream-${outputStream.hashCode()} writing ${decoded.length}:\n${'-'.repeat(100)}\n${decoded}\n${'-'.repeat(100)}`);
 
   // Perform analysis
   var info = {}
+  info['type'] = 'info'
   info['STREAM_ID'] = outputStream.hashCode();
 
   var ascii = 0;
@@ -44,11 +79,11 @@ function processData(byteArray, outputStream) {
     }
   }
 
+  //var message = JSON.stringify(info) + '\n' + decoded;
 
+  send(info);
 
-  var message = JSON.stringify(info) + '\n' + decoded;
-
-  send(message);
+  saveData(byteArray, byteCount, outputStream.hashCode());
   //send("Outputstream to python!")
 }
 
@@ -104,7 +139,7 @@ Java.perform(() => {
 
   const OutputStream = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket$SSLOutputStream');
   OutputStream.write.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
-    processData(byteArray, this);
+    processData(byteArray, byteCount, this);
     this.write(byteArray, offset, byteCount);
   }
 
