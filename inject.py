@@ -91,7 +91,9 @@ def on_message(message, data):
         if payload['type'] == 'data':
             with open(log_folder / f"{current_time(ms=True)}-{payload['hashCode']}-sent.hex", 'w+b') as file:
                 file.write(data)
-
+        elif payload['type'] == 'combined-data':
+            with open(log_folder / f"combined-{payload['hashCode']}-sent.hex", 'w+b') as file:
+                file.write(data)
 
         #decode(payload)
         #print("[*] {0}".format(message['payload']))

@@ -12,6 +12,14 @@ function saveData(byteArray, byteCount, hashCode) {
       type: 'data',
       hashCode: hashCode,
     },
+    intArray
+  );
+
+  send(
+    {
+      type: 'combined-data',
+      hashCode: hashCode,
+    },
     data[hashCode]
   );
 }
