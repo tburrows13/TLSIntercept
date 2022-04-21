@@ -1,7 +1,7 @@
 var data = {};
 
-function saveData(byteArray, byteCount, hashCode, direction) {
-  var intArray = byteArrayToIntArray(byteArray, byteCount, hashCode);
+function saveData(byteArray, offset, byteCount, hashCode, direction) {
+  var intArray = byteArrayToIntArray(byteArray, offset, byteCount);
   if (hashCode in data) {
     data[hashCode] = data[hashCode].concat(intArray);
   } else {
@@ -27,9 +27,9 @@ function saveData(byteArray, byteCount, hashCode, direction) {
   );
 }
 
-function byteArrayToIntArray(array, length) {
+function byteArrayToIntArray(array, offset, length) {
   var result = [];
-  for (var i = 0; i < length; ++i) {
+  for (var i = offset; i < offset + length; ++i) {
       result.push(
           parseInt(
               ('0' + (array[i] & 0xFF).toString(16)).slice(-2), // binary2hex part
@@ -54,7 +54,7 @@ function binaryToHexToAscii(array, length) {
 }
 
 
-function processData(byteArray, byteCount, outputStream, direction) {
+function processData(byteArray, offset, byteCount, outputStream, direction) {
   var decoded = binaryToHexToAscii(byteArray, byteCount);
   //console.log(`OutputStream-${outputStream.hashCode()} writing ${decoded.length}:\n${'-'.repeat(100)}\n${decoded}\n${'-'.repeat(100)}`);
 
@@ -92,7 +92,7 @@ function processData(byteArray, byteCount, outputStream, direction) {
 
   send(info);
 
-  saveData(byteArray, byteCount, outputStream.hashCode(), direction);
+  saveData(byteArray, offset, byteCount, outputStream.hashCode(), direction);
   //send("Outputstream to python!")
 }
 
@@ -148,14 +148,14 @@ Java.perform(() => {
 
   const OutputStream = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket$SSLOutputStream');
   OutputStream.write.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
-    processData(byteArray, byteCount, this, 'sent');
+    processData(byteArray, offset, byteCount, this, 'sent');
     this.write(byteArray, offset, byteCount);
   }
 
   const InputStream = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket$SSLInputStream');
   InputStream.read.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
     var ret = this.read(byteArray, offset, byteCount);
-    processData(byteArray, byteCount, this, 'received');
+    processData(byteArray, offset, byteCount, this, 'received');
     return ret;
   }
 
