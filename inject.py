@@ -48,7 +48,7 @@ def current_time(ms=False):
         now = now.replace(microsecond=0)
     return now.isoformat()
 
-log_folder = Path('logs') / current_time()
+log_folder = Path('logs') / f"{current_time()}-{PROCESS_NAME}"
 os.makedirs(log_folder)
 
 log_file_name = current_time() + '.log'
@@ -89,10 +89,10 @@ def on_message(message, data):
         #payload = json.loads(payload)
         write_log(str(payload))
         if payload['type'] == 'data':
-            with open(log_folder / f"{current_time(ms=True)}-{payload['hashCode']}-sent.hex", 'w+b') as file:
+            with open(log_folder / f"{current_time(ms=True)}-{payload['hashCode']}-{payload['direction']}.hex", 'w+b') as file:
                 file.write(data)
         elif payload['type'] == 'combined-data':
-            with open(log_folder / f"combined-{payload['hashCode']}-sent.hex", 'w+b') as file:
+            with open(log_folder / f"combined-{payload['hashCode']}-{payload['direction']}.hex", 'w+b') as file:
                 file.write(data)
 
         #decode(payload)

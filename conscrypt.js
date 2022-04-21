@@ -1,7 +1,7 @@
 var data = {};
 
-function saveData(byteArray, byteCount, hashCode) {
-  var intArray = byteArrayToIntArray(byteArray, byteCount);
+function saveData(byteArray, byteCount, hashCode, direction) {
+  var intArray = byteArrayToIntArray(byteArray, byteCount, hashCode);
   if (hashCode in data) {
     data[hashCode] = data[hashCode].concat(intArray);
   } else {
@@ -10,7 +10,9 @@ function saveData(byteArray, byteCount, hashCode) {
   send(
     {
       type: 'data',
+      direction: direction,
       hashCode: hashCode,
+      byteCount: byteCount,
     },
     intArray
   );
@@ -18,6 +20,7 @@ function saveData(byteArray, byteCount, hashCode) {
   send(
     {
       type: 'combined-data',
+      direction: direction,
       hashCode: hashCode,
     },
     data[hashCode]
@@ -33,9 +36,6 @@ function byteArrayToIntArray(array, length) {
               16
           )
       );
-  }
-  if (parseInt(('0' + (array[length] & 0xFF).toString(16)).slice(-2), 16) != 0) {
-    console.log('ByteCount wrong')
   }
   return result;
 }
@@ -54,13 +54,14 @@ function binaryToHexToAscii(array, length) {
 }
 
 
-function processData(byteArray, byteCount, outputStream) {
+function processData(byteArray, byteCount, outputStream, direction) {
   var decoded = binaryToHexToAscii(byteArray, byteCount);
   //console.log(`OutputStream-${outputStream.hashCode()} writing ${decoded.length}:\n${'-'.repeat(100)}\n${decoded}\n${'-'.repeat(100)}`);
 
   // Perform analysis
   var info = {}
   info['type'] = 'info'
+  info['direction'] = direction
   info['STREAM_ID'] = outputStream.hashCode();
 
   var ascii = 0;
@@ -91,7 +92,7 @@ function processData(byteArray, byteCount, outputStream) {
 
   send(info);
 
-  saveData(byteArray, byteCount, outputStream.hashCode());
+  saveData(byteArray, byteCount, outputStream.hashCode(), direction);
   //send("Outputstream to python!")
 }
 
@@ -147,8 +148,15 @@ Java.perform(() => {
 
   const OutputStream = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket$SSLOutputStream');
   OutputStream.write.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
-    processData(byteArray, byteCount, this);
+    processData(byteArray, byteCount, this, 'sent');
     this.write(byteArray, offset, byteCount);
+  }
+
+  const InputStream = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket$SSLInputStream');
+  InputStream.read.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
+    var ret = this.read(byteArray, offset, byteCount);
+    processData(byteArray, byteCount, this, 'received');
+    return ret;
   }
 
   console.log("Finished javascript");
