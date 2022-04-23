@@ -88,6 +88,10 @@ function processData(byteArray, offset, byteCount, outputStream, direction) {
     }
   }
 
+  Java.perform(function() {
+    info['STACK_TRACE'] = Java.use("android.util.Log").getStackTraceString(Java.use("java.lang.Exception").$new())
+  });
+
   //var message = JSON.stringify(info) + '\n' + decoded;
 
   send(info);
