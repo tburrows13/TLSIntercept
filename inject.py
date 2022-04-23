@@ -51,7 +51,7 @@ def current_time(ms=False):
 log_folder = Path('logs') / f"{current_time()}-{PROCESS_NAME}"
 os.makedirs(log_folder)
 
-log_file_name = current_time() + '.log'
+log_file_name = current_time() + '-timeline.log'
 log_file = log_folder / log_file_name
 with open(log_file, 'w') as file:
     file.write(f'{PROCESS_NAME}, {SCRIPT_FILE}\n')
