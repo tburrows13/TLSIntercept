@@ -102,7 +102,7 @@ function processData(byteArray, offset, byteCount, outputStream, direction) {
 
 
 Java.perform(() => {
-  Java.deoptimizeEverything();
+  //Java.deoptimizeEverything();
 
   console.log("Starting javascript");
   console.log(`Android version: ${Java.androidVersion}`);
@@ -111,7 +111,7 @@ Java.perform(() => {
   const processName = ActivityThread.currentProcessName();
 
   if (processName === 'org.thoughtcrime.securesms') {
-    // Signal referes to conscrypt by a different name
+    // Signal refers to conscrypt by a different name
     var conscrypt_id = 'org.conscrypt';
   } else {
     var conscrypt_id = 'com.android.org.conscrypt';
@@ -152,16 +152,62 @@ Java.perform(() => {
 
   const OutputStream = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket$SSLOutputStream');
   OutputStream.write.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
+    console.log('FileDescriptorSocket Output');
     processData(byteArray, offset, byteCount, this, 'sent');
     this.write(byteArray, offset, byteCount);
   }
 
   const InputStream = Java.use(conscrypt_id + '.ConscryptFileDescriptorSocket$SSLInputStream');
   InputStream.read.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
+    console.log('FileDescriptorSocket Input');
     var ret = this.read(byteArray, offset, byteCount);
     processData(byteArray, offset, byteCount, this, 'received');
     return ret;
   }
+
+  const OutputStream2 = Java.use(conscrypt_id + '.ConscryptEngineSocket$SSLOutputStream');
+  OutputStream2.write.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
+    console.log('EngineSocket Output');
+    processData(byteArray, offset, byteCount, this, 'sent');
+    this.write(byteArray, offset, byteCount);
+  }
+
+  const InputStream2 = Java.use(conscrypt_id + '.ConscryptEngineSocket$SSLInputStream');
+  InputStream2.read.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
+    console.log('EngineSocket Input');
+    var ret = this.read(byteArray, offset, byteCount);
+    processData(byteArray, offset, byteCount, this, 'received');
+    return ret;
+  }
+
+  const OutputStream3 = Java.use('java.net.SocketOutputStream');
+  OutputStream3.socketWrite.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
+    console.log('SocketOutputStream Output');
+    processData(byteArray, offset, byteCount, this, 'sent');
+    this.socketWrite(byteArray, offset, byteCount);
+  }
+
+  const InputStream3 = Java.use('java.net.SocketInputStream');
+  InputStream3.socketRead0.overload('java.io.FileDescriptor', '[B', 'int', 'int', 'int').implementation = function(fd, byteArray, offset, byteCount, timeout) {
+    console.log('SocketInputStream Input');
+    var ret = this.socketRead0(fd, byteArray, offset, byteCount, timeout);
+    processData(byteArray, offset, byteCount, this, 'received');
+    return ret;
+  }
+
+
+  /*const NativeSSL = Java.use('com.android.org.conscrypt.NativeSsl')
+  NativeSSL.write.implementation = function(fd, byteArray, offset, byteCount, timeout) {
+    console.log('NativeSSL Output');
+    this.write(fd, byteArray, offset, byteCount, timeout);
+    processData(byteArray, offset, byteCount, this, 'sent');
+  }
+  NativeSSL.read.implementation = function(fd, byteArray, offset, byteCount, timeout) {
+    console.log('NativeSSL Input');
+    var ret = this.read(fd, byteArray, offset, byteCount, timeout);
+    processData(byteArray, offset, byteCount, this, 'received');
+    return ret
+  }*/
 
   console.log("Finished javascript");
 });
