@@ -11,7 +11,8 @@ $ ./install.sh
 After each device reboot:
 $ ./run.sh
 
-Modify constants in inject.py, then run injection:
+Run injection:
 $ python inject.py <process> <script>
 
+<process> can be the full name (e.g. 'org.thoughtcrime.securesms') or a shorthand (e.g. 'signal')
 <script> defaults to 'conscrypt'
