@@ -27,14 +27,15 @@ from pathlib import Path
 import frida
 
 
-PROCESS_NAME = sys.argv[1]
-SCRIPT_FILE = (sys.argv[2] if len(sys.argv) > 2 else 'conscrypt') + '.js'
+PROCESS_NAME = sys.argv[1].lower()
+SCRIPT_FILE = (sys.argv[2].lower() if len(sys.argv) > 2 else 'conscrypt') + '.js'
 
 processes = {
     'signal': 'org.thoughtcrime.securesms',
     'whatsapp': 'com.whatsapp',
     'messenger': 'com.facebook.orca',
     'telegram': 'org.telegram.messenger.web',
+    'wire': 'com.wire',
     'tpmb4': 'com.tpmb4.partiiproject',
 }
 
