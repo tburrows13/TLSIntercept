@@ -26,6 +26,8 @@ from pathlib import Path
 
 import frida
 
+from process_data import process_data
+
 
 PROCESS_NAME = sys.argv[1].lower()
 SCRIPT_FILE = (sys.argv[2].lower() if len(sys.argv) > 2 else 'conscrypt') + '.js'
@@ -87,14 +89,23 @@ def write_log(message):
 def on_message(message, data):
     if message['type'] == 'send':
         payload = message['payload']
-        #payload = json.loads(payload)
-        write_log(str(payload))
         if payload['type'] == 'data':
-            with open(log_folder / f"{current_time(ms=True)}-{payload['hashCode']}-{payload['direction']}.hex", 'w+b') as file:
+            with open(log_folder / f"{current_time(ms=True)}-{payload['hashCode']}-{payload['direction']}-raw.hex", 'w+b') as file:
                 file.write(data)
+            info, processed_data = process_data(data)
+            if processed_data:
+                with open(log_folder / f"{current_time(ms=True)}-{payload['hashCode']}-{payload['direction']}-processed.txt", 'w+') as file:
+                    file.write(processed_data)
+            
+            write_log(str({**payload, **info}))
+
         elif payload['type'] == 'combined-data':
             with open(log_folder / f"combined-{payload['hashCode']}-{payload['direction']}.hex", 'w+b') as file:
                 file.write(data)
+            write_log(str(payload))
+        
+        else:
+            write_log(str(payload))
 
         #decode(payload)
         #print("[*] {0}".format(message['payload']))
