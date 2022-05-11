@@ -11,7 +11,7 @@ fi
 while true; do
   if ! adb shell "pidof frida-server" > /dev/null ; then
     echo "Restarting frida-server"
-    adb shell "/data/local/tmp/frida-server &" &
+    adb shell "/data/local/tmp/frida-server &"
   fi
   sleep 5
 done

@@ -8,6 +8,6 @@ mv frida-server-14.2.18-android-x86.xz frida-server.xz
 unxz frida-server.xz
 
 adb root
-sleep 5
+sleep 5  # Give it time to restart shell as root
 adb push frida-server /data/local/tmp
 adb shell "chmod 755 /data/local/tmp/frida-server"
