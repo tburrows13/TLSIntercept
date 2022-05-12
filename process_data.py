@@ -1,6 +1,8 @@
 import json
 import base64, binascii
 
+import blackboxprotobuf
+
 with open('wordlist.txt') as file:
     WORDLIST = file.read().split()
 
@@ -13,7 +15,7 @@ def decode_as_json(data):
     try:
         json_data = json.loads(data)
     except json.decoder.JSONDecodeError:
-        return None
+        return
     for key, value in json_data.items():
         b64_value = decode_as_b64(str(value))
         if b64_value:
@@ -21,15 +23,29 @@ def decode_as_json(data):
     return json_data
 
 def decode_as_b64(data):
-    print(data)
     try:
         b64_data = base64.b64decode(data, validate=True).decode()
     except (binascii.Error, UnicodeDecodeError):
-        return None
+        return
     return b64_data
+
+def decode_as_protobuf(data):
+    try:
+        protobuf_data, typedef = blackboxprotobuf.protobuf_to_json(data)
+    except:
+        # Decoding can raise many different types of exceptions when the data is invalid
+        return
+
+    return str(protobuf_data) + '\n' + str(typedef)
 
 def decode_data(data):
     info = {}
+
+    # Attempt to decode the raw data as a ProtoBuf
+    protobuf_data = decode_as_protobuf(data)
+    if protobuf_data:
+        info["PROTOBUF"] = True
+        return info, protobuf_data
 
     # Remove null bytes from the end
     for i in range(len(data)):
@@ -37,6 +53,12 @@ def decode_data(data):
             data = data[:len(data) - i]
             break
 
+    protobuf_data = decode_as_protobuf(data)
+    if protobuf_data:
+        info["PROTOBUF"] = True
+        return info, protobuf_data
+
+    # Decode the data as UTF-8 before further attempts
     first_decoding = None
     for i in range(len(data) // 2):
         sub_data = data[i:]
