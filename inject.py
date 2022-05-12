@@ -114,20 +114,13 @@ def on_message(message, data):
                 with open(log_folder / f"combined-{payload['hashCode']}-{payload['direction']}-processed.txt", 'w+') as file:
                     file.write(str(processed_data))
 
-            write_log(str(payload))
+            write_log(str({**payload, **info}))
         
         else:
             write_log(str(payload))
 
-        #decode(payload)
-        #print("[*] {0}".format(message['payload']))
     elif message['type'] == 'error':
-        #print(message['description'])
         write_log(message['stack'])
-        #print('JavaScript Error:' + '\n' + message['stack'])
-        #print(message['stack'])
-        #print(message['fileName'])
-        #print(f"{message['lineNumber']}:{message['columnNumber']}")
     else:
         write_log(str(message))
 
