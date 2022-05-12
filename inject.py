@@ -71,7 +71,7 @@ except frida.NotSupportedError:
 
 time.sleep(1)  # Without it Java.perform silently fails
 session = device.attach(pid)
-#session = device.attach("org.telegram.messenger.web")
+#session = device.attach("Signal")
 
 
 with open(SCRIPT_FILE) as f:
@@ -88,30 +88,33 @@ def decode(bytes):
     print("=" * 100)
 
 
-def write_log(message):
+def write_log(message, time=None):
+    if not time:
+        time = current_time(ms=True)
     with open(log_file, 'a') as file:
-        file.write('-' * 120 + '\n' + current_time() + '\n' + message + '\n')
+        file.write('-' * 120 + '\n' + time + '\n' + message + '\n')
 
 
 def on_message(message, data):
     if message['type'] == 'send':
         payload = message['payload']
-        if payload['type'] == 'data':
-            with open(log_folder / f"{current_time(ms=True)}-{payload['hashCode']}-{payload['direction']}-raw.hex", 'w+b') as file:
+        if payload['TYPE'] == 'data':
+            time = current_time(ms=True)
+            with open(log_folder / f"{time}-{payload['STREAM_ID']}-{payload['DIRECTION']}-raw.hex", 'w+b') as file:
                 file.write(data)
             info, processed_data = process_data(data)
             if processed_data:
-                with open(log_folder / f"{current_time(ms=True)}-{payload['hashCode']}-{payload['direction']}-processed.txt", 'w+') as file:
+                with open(log_folder / f"{time}-{payload['STREAM_ID']}-{payload['DIRECTION']}-processed.txt", 'w+') as file:
                     file.write(str(processed_data))
             
-            write_log(str({**payload, **info}))
+            write_log(str({**payload, **info}), time=time)
 
-        elif payload['type'] == 'combined-data':
-            with open(log_folder / f"combined-{payload['hashCode']}-{payload['direction']}.hex", 'w+b') as file:
+        elif payload['TYPE'] == 'combined-data':
+            with open(log_folder / f"combined-{payload['STREAM_ID']}-{payload['DIRECTION']}.hex", 'w+b') as file:
                 file.write(data)
             info, processed_data = process_data(data)
             if processed_data:
-                with open(log_folder / f"combined-{payload['hashCode']}-{payload['direction']}-processed.txt", 'w+') as file:
+                with open(log_folder / f"combined-{payload['STREAM_ID']}-{payload['DIRECTION']}-processed.txt", 'w+') as file:
                     file.write(str(processed_data))
 
             write_log(str({**payload, **info}))

@@ -9,19 +9,20 @@ function saveData(byteArray, offset, byteCount, hashCode, direction) {
   };
   send(
     {
-      type: 'data',
-      direction: direction,
-      hashCode: hashCode,
-      byteCount: byteCount,
+      TYPE: 'data',
+      DIRECTION: direction,
+      STREAM_ID: hashCode,
+      LENGTH: byteCount,
     },
     intArray
   );
 
   send(
     {
-      type: 'combined-data',
-      direction: direction,
-      hashCode: hashCode,
+      TYPE: 'combined-data',
+      DIRECTION: direction,
+      STREAM_ID: hashCode,
+      LENGTH: data[hashCode].length,
     },
     data[hashCode]
   );
@@ -92,20 +93,18 @@ Java.perform(() => {
     return ret;
   }
 
-  // Used by WhatsApp
+  /*/ Used by WhatsApp
   const SocketOutputStream = Java.use('java.net.SocketOutputStream');
   SocketOutputStream.socketWrite.overload('[B', 'int', 'int').implementation = function(byteArray, offset, byteCount) {
-    console.log('SocketOutputStream Output');
     processData(byteArray, offset, byteCount, this, 'sent');
     this.socketWrite(byteArray, offset, byteCount);
   }
   const SocketInputStream = Java.use('java.net.SocketInputStream');
   SocketInputStream.socketRead0.overload('java.io.FileDescriptor', '[B', 'int', 'int', 'int').implementation = function(fd, byteArray, offset, byteCount, timeout) {
-    console.log('SocketInputStream Input');
     var ret = this.socketRead0(fd, byteArray, offset, byteCount, timeout);
     processData(byteArray, offset, byteCount, this, 'received');
     return ret;
-  }
+  }*/
 
   console.log("Finished javascript");
 });
