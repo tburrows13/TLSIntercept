@@ -109,6 +109,11 @@ def on_message(message, data):
         elif payload['type'] == 'combined-data':
             with open(log_folder / f"combined-{payload['hashCode']}-{payload['direction']}.hex", 'w+b') as file:
                 file.write(data)
+            info, processed_data = process_data(data)
+            if processed_data:
+                with open(log_folder / f"combined-{payload['hashCode']}-{payload['direction']}-processed.txt", 'w+') as file:
+                    file.write(str(processed_data))
+
             write_log(str(payload))
         
         else:
