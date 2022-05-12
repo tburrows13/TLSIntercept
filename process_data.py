@@ -16,10 +16,12 @@ def decode_as_json(data):
         json_data = json.loads(data)
     except json.decoder.JSONDecodeError:
         return
-    for key, value in json_data.items():
-        b64_value = decode_as_b64(str(value))
-        if b64_value:
-            json_data[key] = b64_value
+    if type(json_data) == dict:
+        for key, value in json_data.items():
+            b64_value = decode_as_b64(str(value))
+            if b64_value:
+                json_data[key] = b64_value
+                
     return json_data
 
 def decode_as_b64(data):
