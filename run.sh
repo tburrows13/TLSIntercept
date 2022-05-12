@@ -13,5 +13,5 @@ while true; do
     echo "Restarting frida-server"
     adb shell "/data/local/tmp/frida-server &"
   fi
-  sleep 5
+  sleep 3
 done
