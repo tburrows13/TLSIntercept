@@ -29,8 +29,9 @@ import frida
 from process_data import process_data
 
 
-PROCESS_NAME = sys.argv[1].lower()
+PROCESS_NAME = sys.argv[1].lower() if len(sys.argv) > 1 else 'test'
 SCRIPT_FILE = (sys.argv[2].lower() if len(sys.argv) > 2 else 'conscrypt') + '.js'
+TEST_NAME = sys.argv[3] if len(sys.argv) > 3 else 'test'
 
 processes = {
     'signal': 'org.thoughtcrime.securesms',
@@ -38,7 +39,7 @@ processes = {
     'messenger': 'com.facebook.orca',
     'telegram': 'org.telegram.messenger.web',
     'wire': 'com.wire',
-    'tpmb4': 'com.tpmb4.partiiproject',
+    'test': 'com.interceptiontest',
 }
 
 if PROCESS_NAME in processes.keys():
@@ -51,7 +52,7 @@ def current_time(ms=False):
         now = now.replace(microsecond=0)
     return now.isoformat()
 
-log_folder = Path('logs') / f"{current_time()}-{PROCESS_NAME}"
+log_folder = Path('logs') / f"{TEST_NAME}-{current_time()}-{PROCESS_NAME}"
 os.makedirs(log_folder)
 
 log_file_name = current_time() + '-timeline.log'
@@ -61,7 +62,13 @@ with open(log_file, 'w') as file:
 
 
 device = frida.get_usb_device()
-pid = device.spawn([PROCESS_NAME])
+try:
+    pid = device.spawn([PROCESS_NAME])
+except frida.NotSupportedError:
+    # Give run.sh a chance to restart the frida server
+    time.sleep(3)
+    pid = device.spawn([PROCESS_NAME])
+
 time.sleep(1)  # Without it Java.perform silently fails
 session = device.attach(pid)
 #session = device.attach("org.telegram.messenger.web")
@@ -95,7 +102,7 @@ def on_message(message, data):
             info, processed_data = process_data(data)
             if processed_data:
                 with open(log_folder / f"{current_time(ms=True)}-{payload['hashCode']}-{payload['direction']}-processed.txt", 'w+') as file:
-                    file.write(processed_data)
+                    file.write(str(processed_data))
             
             write_log(str({**payload, **info}))
 
