@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package test;
+
+option java_multiple_files = true;
+option java_package = "com.interceptiontest";
+option java_outer_classname = "TestProtos";
+
+message TestProtoBuf {
+  optional string name = 1;
+  optional int32 id = 2;
+  optional string email = 3;
+
+  enum TestEnum {
+    OPT0 = 0;
+    OTP1 = 1;
+    OTP2 = 2;
+  }
+
+  optional TestEnum type = 4;
+}
